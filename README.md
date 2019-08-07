@@ -23,9 +23,66 @@ Clone this repository or copy the files from this repository into a new folder. 
 
 Make sure to [add your user to the `docker` group](https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user) when using Linux.
 
+## Install docker on ubuntu 18.04
+
+Therefore, open a terminal window and type:
+```
+sudo apt-get update
+```
+Next, it’s recommended to uninstall any old Docker software before proceeding.
+
+Use the command:
+
+```
+sudo apt-get remove docker docker-engine docker.io
+```
+Then install Docker on Ubuntu, in the terminal window enter the command:
+```
+sudo apt install docker.io
+```
+The Docker service needs to be setup to run at startup. To do so, type in each command followed by enter:
+```
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+To verify the installed Docker version number, enter:
+```
+docker --version
+```
+If there is this problem ```ERROR: Couldn't connect to Docker daemon at http+docker://localhost - is it running? ``` try to run this command:
+```
+sudo usermod -a -G docker $USER
+```
+
+## Install docker compose on ubuntu 18.04
+We'll check the current release and if necessary, update it in the command below:
+```
+sudo curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+```
+Next we'll set the permissions:
+```
+sudo chmod +x /usr/local/bin/docker-compose
+```
+Then we'll verify that the installation was successful by checking the version:
+```
+docker-compose --version
+```
+
 ## Configuration
 
 Edit the `.env` file to change the default IP address, MySQL root password and WordPress database name.
+
+Check if the 80 port is used with this command:
+
+```
+sudo echo $(sudo netstat -anp | awk '/ LISTEN / {if($4 ~ ":80$") { gsub("/.*","",$7); print $7; exit } }')
+```
+
+If find a process kill it, whit the same command but with kill:
+
+```
+sudo kill $(sudo netstat -anp | awk '/ LISTEN / {if($4 ~ ":80$") { gsub("/.*","",$7); print $7; exit } }')
+```
 
 ## Installation
 

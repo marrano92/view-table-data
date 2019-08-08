@@ -28,7 +28,7 @@ class DataPage {
 	 *
 	 * @param string $title
 	 */
-	public function __construct(string $title) {
+	public function __construct( string $title ) {
 		$this->title = $title;
 	}
 
@@ -53,8 +53,8 @@ class DataPage {
 	 * @return DataPage
 	 */
 	public static function init() {
-		$title    = _x( 'Data Table', 'DataPage', 'andt' );
-		$obj      = new self( $title );
+		$title = _x( 'Data Table', 'DataPage', 'andt' );
+		$obj   = new self( $title );
 
 		if ( current_user_can( 'administrator' ) ) {
 			$capability = 'administrator';
@@ -73,7 +73,8 @@ class DataPage {
 	 */
 	public function render() {
 		global $wpdb;
-
+		$table      = 'contratti';
+		$additional = 100;
 		$this->handle_submissions();
 
 		echo '<div class="wrap">', "\n", '<div class="icon32" id="icon-options-general"><br/>', "</div>\n";
@@ -81,29 +82,44 @@ class DataPage {
 
 		echo '<h3>' . _x( 'Select make to show the scores fo all models', 'Options Page', 'andt' ) . '</h3>';
 
-		$input      = new FilterInput( INPUT_GET, 'score_make' );
+		$total_rows = $wpdb->get_results( "SELECT COUNT(*) AS total FROM {$table}" );
 
-		if ( $input->has_var() ) {
-			$param_make = $input->get();
+		for ( $i = 0; $i <= (int) $total_rows[0]->total; $i ++ ) {
+			$x = $i + $additional;
+
+			if ( $x >= (int) $total_rows[0]->total ) {
+				$x = (int) $total_rows[0]->total;
+			}
+
+			printf( '<a href="%s">Page - %s/%s</a>  ', esc_url( add_query_arg( [ 'pagination' => $i ] ) ), $i, $x );
+			$i = $i + $additional;
 		}
 
-		echo '<form action="options-general.php?page=' . __CLASS__ . '" method="post">', "\n";
+		$pagination = 0;
+		$input      = new FilterInput( INPUT_GET, 'pagination' );
 
-		$table = 'contratti';
-		$datas = $wpdb->get_results( "SELECT * FROM {$table} LIMIT 100"  );
-		$columns = $wpdb->get_col("DESC {$table}", 0);
+		if ( $input->has_var() ) {
+			$pagination = $input->get();
+		}
+
+		echo '<form action="options-general.php?page=' . __CLASS__ . '&pagination=' . $pagination . '" method="post">', "\n";
+
+
+		$datas   = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} LIMIT %d, %d", $pagination, $additional ) );
+		$columns = $wpdb->get_col( "DESC {$table}", 0 );
 
 		if ( false ) {
 			echo '<div class="notice notice-error is-dismissible"><p>' . __( "This data doesn't exist in the database!!!", "andt" ) . '</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Nascondi questa notifica.</span></button></div>';
+
 			return;
 		}
 
 		echo '<fieldset class="group"><table class="form-table">', PHP_EOL;
 
 		echo '<tr>';
-		array_map( function ($column) {
-			printf( '<th>%s</th>', $column);
-		}, $columns);
+		array_map( function ( $column ) {
+			printf( '<th>%s</th>', $column );
+		}, $columns );
 		echo '</tr>';
 
 		echo PHP_EOL;

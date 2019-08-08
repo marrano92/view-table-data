@@ -56,10 +56,10 @@ class DataPage {
 		$title = _x( 'Data Table', 'DataPage', 'andt' );
 		$obj   = new self( $title );
 
-		if ( current_user_can( 'administrator' ) ) {
-			$capability = 'administrator';
+		if ( current_user_can( 'read' ) ) {
+			$capability = 'read';
 
-			add_options_page( $obj->title, $obj->title, $capability, __CLASS__, [ $obj, 'render' ] );
+			add_menu_page( $obj->title, $obj->title, $capability, __CLASS__, [ $obj, 'render' ] );
 			add_filter( 'andt/force_reload_clusters', '__return_true' );
 		}
 
@@ -83,7 +83,21 @@ class DataPage {
 		echo '<h3>' . _x( 'Select make to show the scores fo all models', 'Options Page', 'andt' ) . '</h3>';
 
 		$total_rows = $wpdb->get_results( "SELECT COUNT(*) AS total FROM {$table}" );
+		$filter = '';
+		$pagination = 0;
+		$input_pagination      = new FilterInput( INPUT_GET, 'pagination' );
 
+		if ( $input_pagination->has_var() ) {
+			$pagination = $input_pagination->get();
+		}
+
+		$input_filter      = new FilterInput( INPUT_GET, 'filter-by' );
+		if ( $input_filter->has_var() ) {
+			$filter = $input_filter->get();
+		}
+		$filter_arg = $filter ? '&filter-by' : $filter;
+
+		echo '<h2 class="nav-tab-wrapper">';
 		for ( $i = 0; $i <= (int) $total_rows[0]->total; $i ++ ) {
 			$x = $i + $additional;
 
@@ -91,19 +105,16 @@ class DataPage {
 				$x = (int) $total_rows[0]->total;
 			}
 
-			printf( '<a href="%s">Page - %s/%s</a>  ', esc_url( add_query_arg( [ 'pagination' => $i ] ) ), $i, $x );
+			if ($pagination == $i) {
+				printf( '<a href="%s" class="nav-tab nav-tab-active">Page - %s/%s</a>  ', esc_url( add_query_arg( [ 'pagination' => $i ] ) ), $i, $x );
+			}else {
+				printf( '<a href="%s" class="nav-tab">Page - %s/%s</a>  ', esc_url( add_query_arg( [ 'pagination' => $i ] ) ), $i, $x );
+			}
 			$i = $i + $additional;
 		}
+		echo '</h2>';
 
-		$pagination = 0;
-		$input      = new FilterInput( INPUT_GET, 'pagination' );
-
-		if ( $input->has_var() ) {
-			$pagination = $input->get();
-		}
-
-		echo '<form action="options-general.php?page=' . __CLASS__ . '&pagination=' . $pagination . '" method="post">', "\n";
-
+		echo '<form action="options-general.php?page=' . __CLASS__ . '&pagination=' . $pagination . $filter_arg .'" method="post">', "\n";
 
 		$datas   = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} LIMIT %d, %d", $pagination, $additional ) );
 		$columns = $wpdb->get_col( "DESC {$table}", 0 );
@@ -128,9 +139,11 @@ class DataPage {
 			echo '<tr>';
 			array_map(
 				function ( $column ) use ( $row ) {
+					$name = str_replace([' ', '.'], '_', strtolower($column));
 					printf(
-						'<td><input type="text" name="%1$s[%2$d]" id="interior_%2$d" value="%3$s" ></td>',
+						'<td><input type="text" name="%1$s[%2$d][%3$s]" id="%3$s_%2$d" value="%4$s" ></td>',
 						'data_option',
+						$row->veinum,
 						$column,
 						$row->$column
 					);
@@ -154,10 +167,10 @@ class DataPage {
 	 * @throws \Exception
 	 */
 	public function handle_submissions() {
-		$post = new FilterInput( INPUT_POST, 'andt_options' );
+		$post = new FilterInput( INPUT_POST, 'data_option' );
 		if ( $post->has_var() ) {
-			$models = $_POST['andt_options'];
-			$this->handle( $models );
+			$data_table = $_POST['data_option'];
+			$this->handle( $data_table );
 		}
 	}
 
@@ -168,15 +181,14 @@ class DataPage {
 	 *
 	 * @throws \Exception
 	 */
-	public function handle( $models ) {
+	public function handle( $data_table ) {
 		global $wpdb;
 
-		foreach ( $models as $key => $model ) {
-			$submodelid = $key;
-			foreach ( $model as $key => $value ) {
-				$table = sprintf( '%sscoremodels', $wpdb->prefix );
-				$data  = [ $key => $value ];
-				$where = [ 'submodel_id' => $submodelid ];
+		foreach ( $data_table as $veinum => $row ) {
+			foreach ( $row as $column => $value ) {
+				$table      = 'contratti';
+				$data  = [ $column => $value ];
+				$where = [ 'veinum' => $veinum ];
 				$wpdb->update( $table, $data, $where );
 			}
 		}

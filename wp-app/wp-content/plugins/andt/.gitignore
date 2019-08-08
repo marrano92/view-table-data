@@ -1,0 +1,5 @@
+phpdoc.dist.xml
+vendor/
+tests/php-unit.xml
+qa-reports/
+composer.lock

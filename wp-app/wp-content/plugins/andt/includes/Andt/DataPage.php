@@ -61,9 +61,20 @@ class DataPage {
 
 			add_menu_page( $obj->title, $obj->title, $capability, __CLASS__, [ $obj, 'render' ] );
 			add_filter( 'andt/force_reload_clusters', '__return_true' );
+			add_action( 'admin_enqueue_scripts', [ $obj, 'enqueue_parent_styles'] );
+			add_action( 'admin_footer', [ $obj, 'my_action_javascript' ] );
 		}
 
 		return $obj;
+	}
+
+	function enqueue_parent_styles() {
+		wp_enqueue_style( 'bootstrap-table-style', 'https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css' );
+		wp_enqueue_style( 'bootstrap-style', 'https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css' );
+		wp_enqueue_script( 'jquery-3', 'https://code.jquery.com/jquery-3.3.1.min.js' );
+		wp_enqueue_script( 'bootstrap-table-script', 'https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js' );
+		wp_enqueue_script( 'popper-script', 'https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js' );
+		wp_enqueue_script( 'bootstrap-script', 'https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js' );
 	}
 
 	/**
@@ -125,15 +136,20 @@ class DataPage {
 			return;
 		}
 
-		echo '<fieldset class="group"><table class="form-table">', PHP_EOL;
+		echo '<fieldset class="group">
+				<table 
+						class="form-table" 
+						data-toggle="table" 
+						data-search="true"
+				>', PHP_EOL;
 
-		echo '<tr>';
+		echo '<thead><tr>';
 		array_map( function ( $column ) {
-			printf( '<th>%s</th>', $column );
+			printf( '<th data-sortable="true">%s</th>', $column );
 		}, $columns );
-		echo '</tr>';
+		echo '</tr></thead>';
 
-		echo PHP_EOL;
+		echo PHP_EOL.'<tbody>';
 
 		foreach ( $datas as $row ) {
 			echo '<tr>';
@@ -141,7 +157,7 @@ class DataPage {
 				function ( $column ) use ( $row ) {
 					$name = str_replace([' ', '.'], '_', strtolower($column));
 					printf(
-						'<td><input type="text" name="%1$s[%2$d][%3$s]" id="%3$s_%2$d" value="%4$s" ></td>',
+						'<td><span style="display: none">%4$s</span> <input type="text" name="%1$s[%2$d][%3$s]" id="%3$s_%2$d" value="%4$s"></td>',
 						'data_option',
 						$row->veinum,
 						$column,
@@ -154,7 +170,7 @@ class DataPage {
 			echo '</tr>', PHP_EOL;
 		}
 
-		echo '</table></fieldset>', PHP_EOL;
+		echo '</tbody></table></fieldset>', PHP_EOL;
 
 		submit_button();
 
@@ -195,4 +211,11 @@ class DataPage {
 		echo '<div class="notice notice-success is-dismissible"><p>Operation done.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Nascondi questa notifica.</span></button></div>';
 	}
 
+	public function my_action_javascript() {
+		echo '<script type="text/javascript">
+				jQuery(document).ready(function ($) {
+					
+				});
+		</script>';
+	}
 }
